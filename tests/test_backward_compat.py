@@ -8,6 +8,8 @@ import pytest
 
 from cocoindex_code.server import _convert_embedding_model
 from cocoindex_code.settings import (
+    DEFAULT_EMBEDDING_MODEL,
+    DEFAULT_EMBEDDING_PROVIDER,
     EmbeddingSettings,
     LanguageOverride,
     UserSettings,
@@ -37,13 +39,12 @@ def test_legacy_entry_creates_settings_from_env_vars(
     # Simulate env vars
     us = default_user_settings()
     provider, model = _convert_embedding_model("sbert/sentence-transformers/all-MiniLM-L6-v2")
-    us.embedding = EmbeddingSettings(provider=provider, model=model, device="cpu")
+    us.embedding = EmbeddingSettings(provider=provider, model=model)
     save_user_settings(us)
 
     loaded = load_user_settings()
-    assert loaded.embedding.provider == "sentence-transformers"
-    assert "all-MiniLM-L6-v2" in loaded.embedding.model
-    assert loaded.embedding.device == "cpu"
+    assert loaded.embedding.provider == DEFAULT_EMBEDDING_PROVIDER
+    assert loaded.embedding.model == DEFAULT_EMBEDDING_MODEL
 
 
 def test_legacy_entry_respects_existing_settings(
@@ -73,11 +74,11 @@ def test_legacy_entry_respects_existing_settings(
 def test_legacy_embedding_model_conversion() -> None:
     """Old sbert/ prefix and litellm-style model names should be converted correctly."""
     provider, model = _convert_embedding_model("sbert/sentence-transformers/all-MiniLM-L6-v2")
-    assert provider == "sentence-transformers"
-    assert model == "sentence-transformers/all-MiniLM-L6-v2"
+    assert provider == DEFAULT_EMBEDDING_PROVIDER
+    assert model == DEFAULT_EMBEDDING_MODEL
 
     provider, model = _convert_embedding_model("gemini/text-embedding-004")
-    assert provider == "litellm"
+    assert provider == DEFAULT_EMBEDDING_PROVIDER
     assert model == "gemini/text-embedding-004"
 
 

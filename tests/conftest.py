@@ -9,6 +9,7 @@ import pytest
 # === Environment setup BEFORE any cocoindex_code imports ===
 _TEST_DIR = Path(tempfile.mkdtemp(prefix="cocoindex_test_"))
 os.environ["COCOINDEX_CODE_ROOT_PATH"] = str(_TEST_DIR)
+os.environ["COCOINDEX_CODE_TEST_EMBEDDER"] = "1"
 
 
 @pytest.fixture(scope="session")

@@ -519,8 +519,7 @@ def doctor() -> None:
     try:
         user_settings = _load_user_settings()
         emb = user_settings.embedding
-        device_str = f", device={emb.device}" if emb.device else ""
-        _typer.echo(f"  Embedding: provider={emb.provider}, model={emb.model}{device_str}")
+        _typer.echo(f"  Embedding: provider={emb.provider}, model={emb.model}")
         if user_settings.envs:
             _typer.echo(
                 f"  Env vars (from settings): {', '.join(sorted(user_settings.envs.keys()))}"

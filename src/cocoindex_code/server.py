@@ -17,6 +17,8 @@ from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field
 
+from .settings import DEFAULT_EMBEDDING_MODEL, DEFAULT_EMBEDDING_PROVIDER
+
 _MCP_INSTRUCTIONS = (
     "Code search and codebase understanding tools."
     "\n"
@@ -168,10 +170,9 @@ mcp: FastMCP | None = None
 
 def _convert_embedding_model(env_model: str) -> tuple[str, str]:
     """Convert old COCOINDEX_CODE_EMBEDDING_MODEL to (provider, model)."""
-    sbert_prefix = "sbert/"
-    if env_model.startswith(sbert_prefix):
-        return "sentence-transformers", env_model[len(sbert_prefix) :]
-    return "litellm", env_model
+    if env_model.startswith("sbert/") or env_model.startswith("sentence-transformers/"):
+        return DEFAULT_EMBEDDING_PROVIDER, DEFAULT_EMBEDDING_MODEL
+    return DEFAULT_EMBEDDING_PROVIDER, env_model
 
 
 def main() -> None:
@@ -262,11 +263,6 @@ def main() -> None:
         if env_model:
             provider, model = _convert_embedding_model(env_model)
             us.embedding = EmbeddingSettings(provider=provider, model=model)
-
-        # Migrate COCOINDEX_CODE_DEVICE
-        env_device = os.environ.get("COCOINDEX_CODE_DEVICE")
-        if env_device:
-            us.embedding.device = env_device
 
         save_user_settings(us)
 

@@ -27,16 +27,6 @@ A lightweight, effective **(AST-based)** semantic code search tool for your code
 
 🌟 Please help star [CocoIndex](https://github.com/cocoindex-io/cocoindex) if you like this project!
 
-[Deutsch](https://readme-i18n.com/cocoindex-io/cocoindex-code?lang=de) |
-[English](https://readme-i18n.com/cocoindex-io/cocoindex-code?lang=en) |
-[Español](https://readme-i18n.com/cocoindex-io/cocoindex-code?lang=es) |
-[français](https://readme-i18n.com/cocoindex-io/cocoindex-code?lang=fr) |
-[日本語](https://readme-i18n.com/cocoindex-io/cocoindex-code?lang=ja) |
-[한국어](https://readme-i18n.com/cocoindex-io/cocoindex-code?lang=ko) |
-[Português](https://readme-i18n.com/cocoindex-io/cocoindex-code?lang=pt) |
-[Русский](https://readme-i18n.com/cocoindex-io/cocoindex-code?lang=ru) |
-[中文](https://readme-i18n.com/cocoindex-io/cocoindex-code?lang=zh)
-
 </div>
 
 
@@ -46,16 +36,16 @@ A lightweight, effective **(AST-based)** semantic code search tool for your code
 
 Using [pipx](https://pipx.pypa.io/stable/installation/):
 ```bash
-pipx install cocoindex-code       # first install
-pipx upgrade cocoindex-code       # upgrade
+pipx install "cocoindex-code @ git+https://github.com/CoderDoubleflower/cocoindex-code-mine.git"   # first install
+pipx install --force "cocoindex-code @ git+https://github.com/CoderDoubleflower/cocoindex-code-mine.git"   # upgrade
 ```
 
 Using [uv](https://docs.astral.sh/uv/getting-started/installation/):
 ```bash
-uv tool install --upgrade cocoindex-code --prerelease explicit --with "cocoindex>=1.0.0a24"
+uv tool install --upgrade "cocoindex-code @ git+https://github.com/CoderDoubleflower/cocoindex-code-mine.git" --prerelease explicit --with "cocoindex>=1.0.0a24"
 ```
 
-The default embedding model runs locally ([sentence-transformers/all-MiniLM-L6-v2](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2)) — no API key required, completely free.
+The default embedding model is `text-embedding-3-small` via LiteLLM. Set the relevant API key in your shell or in `envs:` inside `~/.cocoindex_code/global_settings.yml`.
 
 Next, set up your [coding agent integration](#coding-agent-integration) — or jump to [Manual CLI Usage](#manual-cli-usage) if you prefer direct control.
 
@@ -194,7 +184,7 @@ setup — no Python, `uv`, or system dependencies required on the host.
 
 The recommended approach is a **persistent container**: start it once, and use
 `docker exec` to run CLI commands or connect MCP sessions to it. The daemon
-inside stays warm across sessions, so the embedding model is loaded only once.
+inside stays warm across sessions, so indexing state and daemon startup cost are reused.
 
 ### Step 1 — Start the container
 
@@ -202,13 +192,11 @@ inside stays warm across sessions, so the embedding model is loaded only once.
 docker run -d --name cocoindex-code \
   --volume "$(pwd):/workspace" \
   --volume cocoindex-db:/db \
-  --volume cocoindex-model-cache:/root/.cache \
   ghcr.io/cocoindex-io/cocoindex-code:latest
 ```
 
 - `/workspace` — mount your project root here
 - `cocoindex-db` — index databases live inside the container (fast native I/O, no cross-OS volume issues)
-- `cocoindex-model-cache` — persists the embedding model across image upgrades
 
 ### Step 2 — Index your codebase
 
@@ -291,7 +279,7 @@ docker build -t cocoindex-code:local -f docker/Dockerfile .
 - **Ultra Performant**: ⚡ Built on top of ultra performant [Rust indexing engine](https://github.com/cocoindex-io/cocoindex). Only re-indexes changed files for fast updates.
 - **Multi-Language Support**: Python, JavaScript/TypeScript, Rust, Go, Java, C/C++, C#, SQL, Shell, and more.
 - **Embedded**: Portable and just works, no database setup required!
-- **Flexible Embeddings**: Local SentenceTransformers by default (free!) or 100+ cloud providers via LiteLLM.
+- **Flexible Embeddings**: API-only embeddings via LiteLLM with OpenAI `text-embedding-3-small` as the default.
 
 ## Configuration
 
@@ -303,9 +291,8 @@ Shared across all projects. Controls the embedding model and environment variabl
 
 ```yaml
 embedding:
-  provider: sentence-transformers                    # or "litellm"
-  model: sentence-transformers/all-MiniLM-L6-v2
-  device: mps                                        # optional: cpu, cuda, mps (auto-detected if omitted)
+  provider: litellm
+  model: text-embedding-3-small
 
 envs:                                                # extra environment variables for the daemon
   OPENAI_API_KEY: your-key                           # only needed if not already in your shell environment
@@ -375,7 +362,7 @@ See [`src/cocoindex_code/chunking.py`](./src/cocoindex_code/chunking.py) for the
 
 ## Embedding Models
 
-By default, a local SentenceTransformers model ([sentence-transformers/all-MiniLM-L6-v2](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2)) is used — no API key required. To use a different model, edit `~/.cocoindex_code/global_settings.yml`.
+By default, `text-embedding-3-small` is used via LiteLLM. To use a different remote model, edit `~/.cocoindex_code/global_settings.yml`.
 
 > The `envs` entries below are only needed if the key isn't already in your shell environment — the daemon inherits your environment automatically.
 
@@ -384,6 +371,7 @@ By default, a local SentenceTransformers model ([sentence-transformers/all-MiniL
 
 ```yaml
 embedding:
+  provider: litellm
   model: ollama/nomic-embed-text
 ```
 
@@ -396,6 +384,7 @@ Set `OLLAMA_API_BASE` in `envs:` if your Ollama server is not at `http://localho
 
 ```yaml
 embedding:
+  provider: litellm
   model: text-embedding-3-small
 envs:
   OPENAI_API_KEY: your-api-key
@@ -408,6 +397,7 @@ envs:
 
 ```yaml
 embedding:
+  provider: litellm
   model: azure/your-deployment-name
 envs:
   AZURE_API_KEY: your-api-key
@@ -422,6 +412,7 @@ envs:
 
 ```yaml
 embedding:
+  provider: litellm
   model: gemini/gemini-embedding-001
 envs:
   GEMINI_API_KEY: your-api-key
@@ -434,6 +425,7 @@ envs:
 
 ```yaml
 embedding:
+  provider: litellm
   model: mistral/mistral-embed
 envs:
   MISTRAL_API_KEY: your-api-key
@@ -446,6 +438,7 @@ envs:
 
 ```yaml
 embedding:
+  provider: litellm
   model: voyage/voyage-code-3
 envs:
   VOYAGE_API_KEY: your-api-key
@@ -458,6 +451,7 @@ envs:
 
 ```yaml
 embedding:
+  provider: litellm
   model: cohere/embed-v4.0
 envs:
   COHERE_API_KEY: your-api-key
@@ -470,6 +464,7 @@ envs:
 
 ```yaml
 embedding:
+  provider: litellm
   model: bedrock/amazon.titan-embed-text-v2:0
 envs:
   AWS_ACCESS_KEY_ID: your-access-key
@@ -484,6 +479,7 @@ envs:
 
 ```yaml
 embedding:
+  provider: litellm
   model: nebius/BAAI/bge-en-icl
 envs:
   NEBIUS_API_KEY: your-api-key
@@ -491,28 +487,7 @@ envs:
 
 </details>
 
-Any [LiteLLM-supported model](https://docs.litellm.ai/docs/embedding/supported_embedding) works. When using a LiteLLM model, set `provider: litellm` (or omit `provider` — LiteLLM is the default for non-`sentence-transformers` models).
-
-### Local SentenceTransformers Models
-
-Set `provider: sentence-transformers` and use any [SentenceTransformers](https://www.sbert.net/) model (no API key required).
-
-**Example — general purpose text model:**
-```yaml
-embedding:
-  provider: sentence-transformers
-  model: nomic-ai/nomic-embed-text-v1.5
-```
-
-**GPU-optimised code retrieval:**
-
-[`nomic-ai/CodeRankEmbed`](https://huggingface.co/nomic-ai/CodeRankEmbed) delivers significantly better code retrieval than the default model. It is 137M parameters, requires ~1 GB VRAM, and has an 8192-token context window.
-
-```yaml
-embedding:
-  provider: sentence-transformers
-  model: nomic-ai/CodeRankEmbed
-```
+Any [LiteLLM-supported model](https://docs.litellm.ai/docs/embedding/supported_embedding) works. API-only embedding mode supports `provider: litellm` only.
 
 **Note:** Switching models requires re-indexing your codebase (`ccc reset && ccc index`) since the vector dimensions differ.
 
@@ -588,13 +563,13 @@ Then re-install cocoindex-code (see [Get Started](#get-started--zero-config-lets
 
 Using pipx:
 ```bash
-pipx install cocoindex-code       # first install
-pipx upgrade cocoindex-code       # upgrade
+pipx install "cocoindex-code @ git+https://github.com/CoderDoubleflower/cocoindex-code-mine.git"   # first install
+pipx install --force "cocoindex-code @ git+https://github.com/CoderDoubleflower/cocoindex-code-mine.git"   # upgrade
 ```
 
 Using uv (install or upgrade):
 ```bash
-uv tool install --upgrade cocoindex-code --prerelease explicit --with "cocoindex>=1.0.0a24"
+uv tool install --upgrade "cocoindex-code @ git+https://github.com/CoderDoubleflower/cocoindex-code-mine.git" --prerelease explicit --with "cocoindex>=1.0.0a24"
 ```
 
 ## Legacy: Environment Variables
@@ -604,7 +579,6 @@ If you previously configured `cocoindex-code` via environment variables, the `co
 | Environment Variable | YAML Equivalent |
 |---------------------|-----------------|
 | `COCOINDEX_CODE_EMBEDDING_MODEL` | `embedding.model` in `global_settings.yml` |
-| `COCOINDEX_CODE_DEVICE` | `embedding.device` in `global_settings.yml` |
 | `COCOINDEX_CODE_ROOT_PATH` | Run `ccc init` in your project root instead |
 | `COCOINDEX_CODE_EXCLUDED_PATTERNS` | `exclude_patterns` in project `settings.yml` |
 | `COCOINDEX_CODE_EXTRA_EXTENSIONS` | `include_patterns` + `language_overrides` in project `settings.yml` |

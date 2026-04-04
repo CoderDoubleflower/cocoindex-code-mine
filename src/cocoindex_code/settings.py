@@ -86,12 +86,14 @@ DEFAULT_EXCLUDED_PATTERNS: list[str] = [
 # Dataclasses
 # ---------------------------------------------------------------------------
 
+DEFAULT_EMBEDDING_PROVIDER = "litellm"
+DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"
+
 
 @dataclass
 class EmbeddingSettings:
     model: str
-    provider: str = "litellm"
-    device: str | None = None
+    provider: str = DEFAULT_EMBEDDING_PROVIDER
 
 
 @dataclass
@@ -128,8 +130,8 @@ class ProjectSettings:
 def default_user_settings() -> UserSettings:
     return UserSettings(
         embedding=EmbeddingSettings(
-            provider="sentence-transformers",
-            model="sentence-transformers/all-MiniLM-L6-v2",
+            provider=DEFAULT_EMBEDDING_PROVIDER,
+            model=DEFAULT_EMBEDDING_MODEL,
         )
     )
 
@@ -349,8 +351,6 @@ def _user_settings_to_dict(settings: UserSettings) -> dict[str, Any]:
         "provider": settings.embedding.provider,
         "model": settings.embedding.model,
     }
-    if settings.embedding.device is not None:
-        emb["device"] = settings.embedding.device
     d["embedding"] = emb
     if settings.envs:
         d["envs"] = dict(settings.envs)
@@ -361,12 +361,10 @@ def _user_settings_from_dict(d: dict[str, Any]) -> UserSettings:
     emb_dict = d.get("embedding")
     if not emb_dict or "model" not in emb_dict:
         raise ValueError("Must contain 'embedding' with at least 'model' field")
-    # Only pass keys that are present; provider uses dataclass default ("litellm") if omitted
+    # Only pass keys that are present; provider uses the dataclass default if omitted.
     emb_kwargs: dict[str, Any] = {"model": emb_dict["model"]}
     if "provider" in emb_dict:
         emb_kwargs["provider"] = emb_dict["provider"]
-    if "device" in emb_dict:
-        emb_kwargs["device"] = emb_dict["device"]
     embedding = EmbeddingSettings(**emb_kwargs)
     envs = d.get("envs", {})
     return UserSettings(embedding=embedding, envs=envs)

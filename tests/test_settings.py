@@ -12,6 +12,8 @@ import pytest
 from cocoindex_code.daemon import _resolve_chunker_registry
 from cocoindex_code.settings import (
     DEFAULT_EXCLUDED_PATTERNS,
+    DEFAULT_EMBEDDING_MODEL,
+    DEFAULT_EMBEDDING_PROVIDER,
     DEFAULT_INCLUDED_PATTERNS,
     ChunkerMapping,
     EmbeddingSettings,
@@ -46,9 +48,8 @@ def _patch_user_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_default_user_settings() -> None:
     s = default_user_settings()
-    assert s.embedding.provider == "sentence-transformers"
-    assert "all-MiniLM-L6-v2" in s.embedding.model
-    assert s.embedding.device is None
+    assert s.embedding.provider == DEFAULT_EMBEDDING_PROVIDER
+    assert s.embedding.model == DEFAULT_EMBEDDING_MODEL
     assert s.envs == {}
 
 
@@ -65,7 +66,6 @@ def test_save_and_load_user_settings(tmp_path: Path) -> None:
         embedding=EmbeddingSettings(
             provider="litellm",
             model="gemini/text-embedding-004",
-            device="cpu",
         ),
         envs={"GEMINI_API_KEY": "test-key"},
     )
@@ -73,7 +73,6 @@ def test_save_and_load_user_settings(tmp_path: Path) -> None:
     loaded = load_user_settings()
     assert loaded.embedding.provider == settings.embedding.provider
     assert loaded.embedding.model == settings.embedding.model
-    assert loaded.embedding.device == settings.embedding.device
     assert loaded.envs == settings.envs
 
 
@@ -133,7 +132,25 @@ def test_save_default_settings_writes_explicit_embedding() -> None:
     content = user_settings_path().read_text()
     assert "provider:" in content
     assert "model:" in content
-    assert "sentence-transformers" in content
+    assert DEFAULT_EMBEDDING_PROVIDER in content
+    assert DEFAULT_EMBEDDING_MODEL in content
+
+
+@pytest.mark.usefixtures("_patch_user_dir")
+def test_load_user_settings_ignores_legacy_device_field(tmp_path: Path) -> None:
+    path = tmp_path / ".cocoindex_code" / "global_settings.yml"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "embedding:\n"
+        "  provider: litellm\n"
+        "  model: text-embedding-3-small\n"
+        "  device: cpu\n"
+    )
+
+    loaded = load_user_settings()
+    assert loaded.embedding.provider == "litellm"
+    assert loaded.embedding.model == "text-embedding-3-small"
+    assert not hasattr(loaded.embedding, "device")
 
 
 def test_load_project_settings_missing_file_raises(tmp_path: Path) -> None:

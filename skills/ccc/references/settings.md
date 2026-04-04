@@ -8,9 +8,8 @@ Shared across all projects. Controls the embedding model and extra environment v
 
 ```yaml
 embedding:
-  provider: sentence-transformers   # or "litellm" (default when provider is omitted)
-  model: sentence-transformers/all-MiniLM-L6-v2
-  device: mps                       # optional: cpu, cuda, mps (auto-detected if omitted)
+  provider: litellm
+  model: text-embedding-3-small
 
 envs:                               # extra environment variables for the daemon
   OPENAI_API_KEY: your-key          # only needed if not already in the shell environment
@@ -20,31 +19,17 @@ envs:                               # extra environment variables for the daemon
 
 | Field | Description |
 |-------|-------------|
-| `embedding.provider` | `sentence-transformers` for local models, `litellm` (or omit) for cloud/remote models |
-| `embedding.model` | Model identifier — format depends on provider (see examples below) |
-| `embedding.device` | Optional. `cpu`, `cuda`, or `mps`. Auto-detected if omitted. Only relevant for `sentence-transformers`. |
+| `embedding.provider` | `litellm`. API-only embedding mode is the only supported provider. |
+| `embedding.model` | LiteLLM model identifier. Defaults to `text-embedding-3-small`. |
 | `envs` | Key-value map of environment variables injected into the daemon. Use for API keys not already in the shell environment. |
 
 ### Embedding Model Examples
-
-**Local (sentence-transformers, no API key needed):**
-
-```yaml
-embedding:
-  provider: sentence-transformers
-  model: sentence-transformers/all-MiniLM-L6-v2    # default, lightweight
-```
-
-```yaml
-embedding:
-  provider: sentence-transformers
-  model: nomic-ai/CodeRankEmbed                     # better code retrieval, needs GPU (~1 GB VRAM)
-```
 
 **Ollama (local):**
 
 ```yaml
 embedding:
+  provider: litellm
   model: ollama/nomic-embed-text
 ```
 
@@ -52,6 +37,7 @@ embedding:
 
 ```yaml
 embedding:
+  provider: litellm
   model: text-embedding-3-small
 envs:
   OPENAI_API_KEY: your-api-key
@@ -61,6 +47,7 @@ envs:
 
 ```yaml
 embedding:
+  provider: litellm
   model: gemini/gemini-embedding-001
 envs:
   GEMINI_API_KEY: your-api-key
@@ -70,12 +57,13 @@ envs:
 
 ```yaml
 embedding:
+  provider: litellm
   model: voyage/voyage-code-3
 envs:
   VOYAGE_API_KEY: your-api-key
 ```
 
-For the full list of supported cloud providers and model identifiers, see [LiteLLM Embedding Models](https://docs.litellm.ai/docs/embedding/supported_embedding).
+For the full list of supported providers and model identifiers, see [LiteLLM Embedding Models](https://docs.litellm.ai/docs/embedding/supported_embedding).
 
 ### Important
 

@@ -38,7 +38,7 @@ class _StubEmbedder:
     async def __coco_vector_schema__(self) -> VectorSchema:
         return VectorSchema(dtype=np.dtype("float32"), size=_EMBED_DIM)
 
-    async def embed(self, text: str) -> np.ndarray:
+    async def embed(self, text: str, prompt_name: str | None = None) -> np.ndarray:
         return np.zeros(_EMBED_DIM, dtype=np.float32)
 
 
